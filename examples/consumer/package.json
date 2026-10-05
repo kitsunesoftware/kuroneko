@@ -1,0 +1,29 @@
+{
+  "name": "kuroneko-consumer-fixture",
+  "private": true,
+  "type": "module",
+  "description": "Fixture de projeto que consome Kuroneko sem copiar a plataforma",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "prepare": "nuxt prepare",
+    "check-zones": "node ../../scripts/check-zones.mjs .",
+    "db:setup": "node node_modules/@kitsunesoftware/kuroneko/scripts/db-setup.mjs",
+    "db:generate": "node node_modules/@kitsunesoftware/kuroneko/scripts/db-setup.mjs --generate-only"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  },
+  "devDependencies": {
+    "nuxt": "^4.5.2",
+    "prisma": "^6.19.3"
+  },
+  "allowScripts": {
+    "@kitsunesoftware/kuroneko@1.0.5": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "argon2@0.45.1": true,
+    "esbuild@0.28.2": true,
+    "prisma@6.19.3": true
+  }
+}
