@@ -1,0 +1,86 @@
+{
+	"name": "@kitsunesoftware/kuroneko",
+	"version": "1.0.0",
+	"description": "Template Nuxt 4 modular (layers) — plataforma atualizável Kuroneko",
+	"type": "module",
+	"private": true,
+	"main": "./nuxt.config.ts",
+	"exports": {
+		".": "./nuxt.config.ts",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"app",
+		"layers",
+		"prisma",
+		"public",
+		"scripts",
+		"nuxt.config.ts",
+		"tailwind.config.ts",
+		"tsconfig.json",
+		"ecosystem.config.cjs",
+		"docs",
+		"examples",
+		"CHANGELOG.md",
+		"README.md"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kitsunesoftware/kuroneko.git"
+	},
+	"homepage": "https://github.com/kitsunesoftware/kuroneko#readme",
+	"bugs": {
+		"url": "https://github.com/kitsunesoftware/kuroneko/issues"
+	},
+	"keywords": [
+		"nuxt",
+		"nuxt-layer",
+		"kuroneko",
+		"template"
+	],
+	"scripts": {
+		"build": "nuxt build && node scripts/fix-prisma-output.mjs",
+		"dev": "node scripts/ensure-prisma.mjs && nuxt dev --dotenv .env.development",
+		"generate": "nuxt generate",
+		"preview": "nuxt preview",
+		"postinstall": "node scripts/postinstall.mjs",
+		"db:compose": "node scripts/db-setup.mjs --compose-only",
+		"db:generate": "node scripts/db-setup.mjs --generate-only",
+		"db:push": "node scripts/db-setup.mjs",
+		"db:setup": "node scripts/db-setup.mjs",
+		"kuroneko:check-zones": "node scripts/check-zones.mjs",
+		"kuroneko:update": "node scripts/kuroneko-update.mjs"
+	},
+	"dependencies": {
+		"@nuxt/icon": "^2.5.1",
+		"@nuxtjs/tailwindcss": "^6.14.0",
+		"@prisma/client": "^6.19.3",
+		"@simplewebauthn/browser": "^14.0.0",
+		"@simplewebauthn/server": "^14.0.3",
+		"argon2": "^0.45.1",
+		"dotenv": "^18.0.4",
+		"nodemailer": "^10.0.13",
+		"otpauth": "^9.5.2",
+		"qrcode": "^1.5.4",
+		"vue": "^3.5.43",
+		"vue-router": "^5.3.1"
+	},
+	"peerDependencies": {
+		"nuxt": "^4.5.2"
+	},
+	"allowScripts": {
+		"esbuild@0.28.2": true,
+		"prisma@6.19.3": true,
+		"@prisma/engines@6.19.3": true,
+		"@prisma/client@6.19.3": true,
+		"argon2@0.45.1": true
+	},
+	"devDependencies": {
+		"@iconify-json/solar": "^1.2.13",
+		"@types/node": "^26.6.3",
+		"@types/nodemailer": "^8.0.2",
+		"@types/qrcode": "^1.5.6",
+		"nuxt": "^4.5.2",
+		"prisma": "^6.19.3"
+	}
+}
