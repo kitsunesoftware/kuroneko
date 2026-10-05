@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Módulos detectados no código e instalados no banco.
+model InstalledModule {
+  id          String   @id @default(cuid())
+  moduleId    String   @unique
+  enabled     Boolean  @default(true)
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Configurações globais do painel (logo, título, SMTP, manutenção, etc.).
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+/// Configurações por módulo (schema de settings do painel de módulos).
+model ModuleSetting {
+  id        String   @id @default(cuid())
+  moduleId  String
+  key       String
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@unique([moduleId, key])
+  @@index([moduleId])
+}
+
+/// Cache do catálogo da loja (sincronizado do monorepo GitHub).
+model StoreCatalogModule {
+  id        String   @id @default(cuid())
+  moduleId  String   @unique
+  source    String
+  ref       String   @default("main")
+  path      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([source])
+}
+
+/// Fila de mudanças de módulos (install/uninstall) aplicada no reinício PM2.
+model ModuleChangeQueue {
+  id        String   @id @default(cuid())
+  moduleId  String   @unique
+  action    String
+  /// install | uninstall
+  label     String?
+  version   String?
+  target    String?
+  hasSchema Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([action])
+  @@index([createdAt])
+}
