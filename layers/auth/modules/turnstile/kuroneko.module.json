@@ -1,0 +1,17 @@
+{
+  "id": "auth.login.turnstile",
+  "name": "Cloudflare Turnstile",
+  "description": "Proteção anti-bot no login com Cloudflare Turnstile.",
+  "version": "1.0.0",
+  "parentId": "auth.login",
+  "layer": {
+    "kind": "child",
+    "parent": "auth",
+    "target": "layers/auth/modules/turnstile"
+  },
+  "icon": "assets/images/logo.png",
+  "dependsOn": ["auth.login"],
+  "author": "kuroneko",
+  "license": "MIT",
+  "minKuroneko": "1.0.0"
+}

@@ -1,0 +1,24 @@
+/// Schema do submódulo auth.account
+model AccountProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  avatarUrl       String?
+  /// Zoom, offset, rotação e flips do enquadramento (imagem original intacta).
+  avatarTransform Json?
+  /// E-mail alternativo para recuperação de acesso.
+  recoveryEmail   String?
+  /// Exibir data de nascimento no perfil público.
+  showBirthDate   Boolean  @default(true)
+  /// Quando showBirthDate=true, ocultar o ano.
+  hideBirthYear   Boolean  @default(false)
+  /// Alertas quando a senha é usada em contexto incomum.
+  passwordAlerts  Boolean  @default(true)
+  /// Alterações de username na janela atual.
+  usernameChangeCount     Int       @default(0)
+  /// Início da janela de contagem de alterações de username.
+  usernameWindowStartedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([recoveryEmail])
+}

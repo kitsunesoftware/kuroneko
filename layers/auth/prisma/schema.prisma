@@ -1,0 +1,98 @@
+/// Schema do núcleo de autenticação (módulo auth).
+model User {
+  id           String    @id @default(cuid())
+  email        String?   @unique
+  /// E-mail anterior (preenchido na troca). Usado para manter rate limit.
+  oldEmail     String?
+  username     String?   @unique
+  name         String?
+  passwordHash String?
+  birthDate    DateTime?
+  roleId       String?
+  role         Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  /// Conta ativa: false impede login e invalida sessões.
+  enabled      Boolean   @default(true)
+
+  /// Tentativas falhas na janela atual de rate limit.
+  loginAttemptCount  Int       @default(0)
+  /// Total acumulado de falhas até o bloqueio longo (24h).
+  loginGlobalCount   Int       @default(0)
+  /// Fim do bloqueio temporário da janela.
+  loginWindowEndsAt  DateTime?
+  /// Fim do bloqueio longo (global).
+  loginBlockedUntil  DateTime?
+  /// Última tentativa de login registrada (sucesso ou falha).
+  loginLastAttemptAt DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([roleId])
+  @@index([oldEmail])
+  @@index([loginBlockedUntil])
+  @@index([loginWindowEndsAt])
+}
+
+/// Tentativas de login para identificadores sem usuário (servidor, não browser).
+model LoginRateLimit {
+  id           String    @id @default(cuid())
+  /// Identificador normalizado (e-mail ou usuário digitado).
+  key          String    @unique
+  attemptCount Int       @default(0)
+  globalCount  Int       @default(0)
+  windowEndsAt DateTime?
+  blockedUntil DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([blockedUntil])
+  @@index([windowEndsAt])
+}
+
+/// Sessão autenticada (dispositivos / cookies opacos).
+model AuthSession {
+  id          String    @id @default(cuid())
+  userId      String
+  /// SHA-256 do token opaco (nunca armazenar o token em claro).
+  tokenHash   String    @unique
+  userAgent   String?
+  /// Ex.: "Firefox · Windows"
+  deviceLabel String?
+  /// Ex.: "Computador" | "Dispositivo móvel"
+  deviceType  String?
+  ip          String?
+  remember    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  revokedAt   DateTime?
+  expiresAt   DateTime
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+/// Tipo de permissão (papel) atribuído a contas.
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String?
+  isSystem    Boolean          @default(false)
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+/// Capacidade liberada (ou não) para um papel.
+model RolePermission {
+  id      String  @id @default(cuid())
+  roleId  String
+  key     String
+  allowed Boolean @default(true)
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, key])
+  @@index([key])
+}

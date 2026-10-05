@@ -1,0 +1,12 @@
+/// Schema do submódulo auth.register
+model PendingRegistration {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  name      String   @default("")
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([email])
+  @@index([expiresAt])
+}
