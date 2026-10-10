@@ -57,8 +57,8 @@ O script:
 1. Cria o Nuxt (`nuxi init`)
 2. Pergunta host, porta, usuário, senha e database do Postgres
 3. Gera o `.env` (`DATABASE_URL`, `HOST=0.0.0.0`, `PORT=3000`)
-4. Instala Kuroneko + Prisma 6
-5. Configura `nuxt.config.ts`, `app/app.vue` e scripts `db:*`
+4. Instala Kuroneko + Prisma 7 (`prisma@7`, não o CLI 8)
+5. Configura `nuxt.config.ts`, `app/app.vue`, scripts `db:*` e `ecosystem.config.cjs` (`name` = `NUXT_PM2_APP_NAME`)
 6. Roda `npm run db:generate`
 
 Depois:
@@ -72,7 +72,24 @@ Abra **http://localhost:3000/install** e conclua o wizard (schema → identidade
 
 > Use um **database vazio/novo**. Se apontar para um banco que já tem usuário admin, o `/install` não aparece (site considerado instalado).
 
-Cópia local do script neste repo: [`scripts/create-project.sh`](scripts/create-project.sh).
+Cópia neste repositório: [`scripts/create-project.sh`](scripts/create-project.sh). Essa versão grava `ecosystem.config.cjs` e `NUXT_PM2_APP_NAME` com o mesmo nome do app. Se o gist do `curl` ainda não tiver esse trecho, use o script do repositório.
+
+---
+
+## Produção com PM2
+
+O nome no `ecosystem.config.cjs` e a variável `NUXT_PM2_APP_NAME` precisam ser iguais. O botão **Reiniciar aplicação** usa esse nome para parar o app, processar a fila de módulos, aplicar schema, fazer build e subir de novo.
+
+Não copie `scripts/pm2-rebuild.mjs` (nem a fila / `db-setup`) para o projeto. Esses arquivos vêm do pacote. Um `scripts/pm2-rebuild.mjs` local, se existir e for outro arquivo, entra só como override.
+
+```bash
+npm run build
+pm2 start ecosystem.config.cjs
+```
+
+Depois: instalar um módulo na loja → **Reiniciar aplicação** → `GET /api/modules/installed` com `needsRestart: false` e `pendingModuleIds: []`.
+
+Detalhes: [`docs/UPDATE.md`](docs/UPDATE.md).
 
 ---
 
@@ -90,7 +107,8 @@ meu-site/
 ├── app/
 │   ├── app.vue              # NuxtLayout + NuxtPage (obrigatório)
 │   └── pages/               # suas rotas
-├── .env                     # DATABASE_URL
+├── .env                     # DATABASE_URL e NUXT_PM2_APP_NAME
+├── ecosystem.config.cjs     # name = NUXT_PM2_APP_NAME
 ├── nuxt.config.ts           # extends: Kuroneko
 └── node_modules/@kitsunesoftware/kuroneko/
 ```

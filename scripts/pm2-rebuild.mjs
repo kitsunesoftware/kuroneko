@@ -1,6 +1,11 @@
 /**
  * Rebuild via PM2 daemon.
  *
+ * Este arquivo vive no pacote Kuroneko. `process.cwd()` é a raiz do consumer
+ * (compose, `.kuroneko/`, layers, npm run build, nome no PM2).
+ * `process-module-queue.mjs` e `db-setup.mjs` são os irmãos desta pasta,
+ * não `<cwd>/scripts/…`.
+ *
  * Fluxo:
  *   pm2 stop
  *   → processa fila ModuleChangeQueue (install/uninstall + drop schema)
@@ -9,12 +14,23 @@
  *   → pm2 restart
  */
 import { execFile, spawn } from 'node:child_process'
-import { appendFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { setTimeout as sleep } from 'node:timers/promises'
 
 const appName = process.argv[2] || 'kuroneko'
 const root = process.cwd()
+const scriptsDir = dirname(fileURLToPath(import.meta.url))
+
+function packagedScript(name) {
+  const script = join(scriptsDir, name)
+  if (!existsSync(script)) {
+    throw new Error(`[pm2-rebuild] script do pacote ausente: ${script}`)
+  }
+  return script
+}
+
 const isWin = process.platform === 'win32'
 const logPath = join(root, '.kuroneko', 'restart.log')
 const jobName = `${appName}-rebuild`
@@ -115,19 +131,22 @@ async function main() {
 
   await sleep(isWin ? 3000 : 1000)
 
-  try {
-    log('[pm2-rebuild] process-module-queue…')
-    await run(node, [join(root, 'scripts', 'process-module-queue.mjs')])
+  const queueScript = packagedScript('process-module-queue.mjs')
+  const dbSetupScript = packagedScript('db-setup.mjs')
 
-    log('[pm2-rebuild] db:compose (installed-only)…')
-    await run(node, [join(root, 'scripts', 'db-setup.mjs'), '--compose-only', '--installed-only'])
+  try {
+    log(`[pm2-rebuild] process-module-queue… (${queueScript})`)
+    await run(node, [queueScript])
+
+    log(`[pm2-rebuild] db:compose (installed-only)… (${dbSetupScript})`)
+    await run(node, [dbSetupScript, '--compose-only', '--installed-only'])
 
     log('[pm2-rebuild] db:generate…')
     await run(npm, ['run', 'db:generate'])
 
     log('[pm2-rebuild] db:push…')
     await run(node, [
-      join(root, 'scripts', 'db-setup.mjs'),
+      dbSetupScript,
       '--skip-generate',
       '--installed-only',
     ])
@@ -159,25 +178,40 @@ async function main() {
   log('[pm2-rebuild] concluído.')
 }
 
-main().catch(async (error) => {
-  log(`[erro fatal] ${error instanceof Error ? error.message : error}`)
-  const pm2 = isWin ? 'pm2.cmd' : 'pm2'
+function executedDirectly() {
+  const entry = process.argv[1]
+  if (!entry) return false
   try {
-    await run(pm2, ['restart', appName])
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entry)
   }
   catch {
+    return false
+  }
+}
+
+const isDirectRun = executedDirectly()
+
+if (isDirectRun) {
+  main().catch(async (error) => {
+    log(`[erro fatal] ${error instanceof Error ? error.message : error}`)
+    const pm2 = isWin ? 'pm2.cmd' : 'pm2'
     try {
-      await run(pm2, ['start', appName])
+      await run(pm2, ['restart', appName])
+    }
+    catch {
+      try {
+        await run(pm2, ['start', appName])
+      }
+      catch {
+        // ignore
+      }
+    }
+    try {
+      await cleanupJob(pm2)
     }
     catch {
       // ignore
     }
-  }
-  try {
-    await cleanupJob(pm2)
-  }
-  catch {
-    // ignore
-  }
-  process.exit(1)
-})
+    process.exit(1)
+  })
+}

@@ -1,11 +1,14 @@
 import { createRequire } from 'node:module'
-import { dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { discoverRootLayers } from './layers/base/shared/discover-layers'
 
 const packageRoot = dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 const pkg = require('./package.json') as { version?: string }
+
+/** Client gerado na raiz de quem rodou o Nuxt (monorepo ou consumer). */
+const prismaClientEntry = resolve(process.cwd(), 'generated/prisma/client')
 
 /**
  * Kuroneko como layer Nuxt publicável.
@@ -21,6 +24,16 @@ export default defineNuxtConfig({
   // Evita erro Vite: Failed to resolve import "#app-manifest"
   experimental: {
     appManifest: false,
+  },
+
+  alias: {
+    '#prisma/client': prismaClientEntry,
+  },
+
+  nitro: {
+    alias: {
+      '#prisma/client': prismaClientEntry,
+    },
   },
 
   runtimeConfig: {

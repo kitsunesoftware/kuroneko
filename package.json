@@ -1,6 +1,6 @@
 {
 	"name": "@kitsunesoftware/kuroneko",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"description": "Template Nuxt 4 modular (layers) — plataforma atualizável Kuroneko",
 	"type": "module",
 	"private": true,
@@ -39,7 +39,7 @@
 		"template"
 	],
 	"scripts": {
-		"build": "nuxt build && node scripts/fix-prisma-output.mjs",
+		"build": "nuxt build",
 		"dev": "node scripts/ensure-prisma.mjs && nuxt dev --dotenv .env.development",
 		"generate": "nuxt generate",
 		"preview": "nuxt preview",
@@ -54,13 +54,16 @@
 	"dependencies": {
 		"@nuxt/icon": "^2.5.1",
 		"@nuxtjs/tailwindcss": "^6.14.0",
-		"@prisma/client": "^6.19.3",
+		"@prisma/adapter-pg": "^7.10.0",
+		"@prisma/client": "^7.10.0",
 		"@simplewebauthn/browser": "^14.0.0",
 		"@simplewebauthn/server": "^14.0.3",
 		"argon2": "^0.45.1",
 		"dotenv": "^18.0.4",
+		"jiti": "^2.6.1",
 		"nodemailer": "^10.0.13",
 		"otpauth": "^9.5.2",
+		"pg": "^8.16.3",
 		"qrcode": "^1.5.4",
 		"vue": "^3.5.43",
 		"vue-router": "^5.3.1"
@@ -70,9 +73,10 @@
 	},
 	"allowScripts": {
 		"esbuild@0.28.2": true,
-		"prisma@6.19.3": true,
-		"@prisma/engines@6.19.3": true,
-		"@prisma/client@6.19.3": true,
+		"prisma@7.10.0": true,
+		"@prisma/client@7.10.0": true,
+		"@prisma/adapter-pg@7.10.0": true,
+		"@prisma/engines@7.10.0": true,
 		"argon2@0.45.1": true
 	},
 	"devDependencies": {
@@ -81,6 +85,6 @@
 		"@types/nodemailer": "^8.0.2",
 		"@types/qrcode": "^1.5.6",
 		"nuxt": "^4.5.2",
-		"prisma": "^6.19.3"
+		"prisma": "^7.10.0"
 	}
 }

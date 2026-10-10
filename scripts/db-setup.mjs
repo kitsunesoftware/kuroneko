@@ -1,13 +1,13 @@
-import { config } from 'dotenv'
-import { existsSync } from 'node:fs'
+import { copyFileSync, existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { resolveAllSchemaMetas } from './lib/discover-module-schemas.mjs'
+import { createProjectPrismaClient } from './lib/load-project-prisma.mjs'
+import { loadProjectEnv } from './lib/load-project-env.mjs'
 
-config({ path: '.env.development' })
-config({ path: '.env' })
+loadProjectEnv()
 
 /** Schemas de sistema (sem kuroneko.module.json). Paths relativos à raiz da plataforma. */
 const SYSTEM_MODULE_SCHEMAS = [
@@ -55,11 +55,20 @@ const installedOnly = process.argv.includes('--installed-only')
 console.log(`[db-setup] projeto: ${projectRoot}`)
 console.log(`[db-setup] plataforma: ${platformRoot}`)
 
+const consumerConfig = join(projectRoot, 'prisma.config.ts')
+if (!existsSync(consumerConfig)) {
+  const bundledConfig = join(platformRoot, 'prisma.config.ts')
+  if (!existsSync(bundledConfig)) {
+    throw new Error('[db-setup] prisma.config.ts ausente na plataforma Kuroneko.')
+  }
+  copyFileSync(bundledConfig, consumerConfig)
+  console.log('[db-setup] prisma.config.ts criado a partir do pacote')
+}
+
 async function loadInstalledModuleIds() {
   if (!process.env.DATABASE_URL) return null
   try {
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    const prisma = await createProjectPrismaClient(projectRoot)
     try {
       const rows = await prisma.installedModule.findMany({ select: { moduleId: true } })
       return new Set(rows.map((row) => row.moduleId))
@@ -169,7 +178,7 @@ function runPrisma(args) {
   if (!existsSync(bin)) {
     return Promise.reject(
       new Error(
-        'CLI prisma não encontrada. No projeto consumidor: npm i -D prisma && npm i @prisma/client',
+        'CLI prisma não encontrada. No projeto: npm i -D prisma@7 && npm i @prisma/client@7 @prisma/adapter-pg',
       ),
     )
   }
@@ -205,7 +214,6 @@ else if (!onlyCompose) {
     '--schema',
     'prisma/schema',
     '--accept-data-loss',
-    ...(skipGenerate ? ['--skip-generate'] : []),
   ])
   console.log('Prisma sync concluído.')
 }

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { H3Event } from 'h3'
-import type { User } from '@prisma/client'
+import type { User } from '#prisma/client'
 import { usePrisma } from '../../../base/server/utils/prisma'
 
 export type AuthUser = {

@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  // Relativo a prisma/schema/ → <raiz do projeto>/generated/prisma
+  output   = "../../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 /// Módulos detectados no código e instalados no banco.

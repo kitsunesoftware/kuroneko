@@ -3,7 +3,6 @@
  * install → InstalledModule enabled + settings seed opcional
  * uninstall → drop tables + settings + InstalledModule
  */
-import { config } from 'dotenv'
 import {
   appendFileSync,
   existsSync,
@@ -12,10 +11,10 @@ import {
   rmSync,
 } from 'node:fs'
 import { join, normalize, resolve, sep } from 'node:path'
+import { createProjectPrismaClient } from './lib/load-project-prisma.mjs'
+import { loadProjectEnv } from './lib/load-project-env.mjs'
 
-config({ path: '.env.production' })
-config({ path: '.env' })
-config({ path: '.env.development' })
+loadProjectEnv()
 
 const root = process.cwd()
 const logPath = join(root, '.kuroneko', 'restart.log')
@@ -77,8 +76,7 @@ function removeLayerFolder(target, moduleId) {
   return true
 }
 
-const { PrismaClient } = await import('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = await createProjectPrismaClient(root)
 const schemaMetas = loadSchemaMetas()
 
 log(`\n--- ${new Date().toISOString()} process-module-queue ---`)

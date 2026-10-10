@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSy
 import { utimes } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createError } from 'h3'
+import { resolvePm2RebuildScriptPath } from './resolve-pm2-rebuild-script.mjs'
 
 export type AppRuntimeMode = 'dev' | 'prod'
 
@@ -147,9 +148,30 @@ export async function triggerNuxtDevRestart(reason = 'layer-change', options?: {
   return { triggered: true as const, reason, path: configPath.replace(/\\/g, '/') }
 }
 
+/** Aspas para cmd.exe quando `shell: true` junta os args com espaço. */
+function quoteCmdArg(value: string) {
+  if (!/[\s"]/.test(value)) return value
+  return `"${value.replace(/"/g, '""')}"`
+}
+
+/**
+ * Default: script do pacote. `scripts/pm2-rebuild.mjs` na raiz do consumer
+ * só entra se for um arquivo diferente (override). No monorepo os dois paths coincidem.
+ */
+export function resolvePm2RebuildScript(projectRoot = process.cwd()) {
+  try {
+    return resolvePm2RebuildScriptPath(projectRoot)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw createError({ statusCode: 500, message })
+  }
+}
+
 /**
  * Agenda rebuild como app one-shot no daemon PM2 (fora da árvore do processo atual).
  * No Windows, filho detached do Node do app morre junto no `pm2 stop`.
+ * O script roda com cwd = raiz do consumer; o arquivo em si vem do pacote.
  */
 export function schedulePm2Rebuild() {
   const info = getStoreRuntimeInfo()
@@ -169,22 +191,24 @@ export function schedulePm2Rebuild() {
       message: 'Já existe um rebuild agendado.',
     })
   }
-  scheduled = true
 
   const root = process.cwd()
-  const script = join(root, 'scripts', 'pm2-rebuild.mjs')
+  const script = resolvePm2RebuildScript(root)
+  scheduled = true
+
   const jobName = `${info.appName}-rebuild`
   const isWin = process.platform === 'win32'
   const pm2 = isWin ? 'pm2.cmd' : 'pm2'
+  const pm2Args = (args: string[]) => (isWin ? args.map(quoteCmdArg) : args)
 
   mkdirSync(join(root, '.kuroneko'), { recursive: true })
   appendFileSync(
     join(root, '.kuroneko', 'restart.log'),
-    `\n--- ${new Date().toISOString()} schedule pm2 job ${jobName} ---\n`,
+    `\n--- ${new Date().toISOString()} schedule pm2 job ${jobName} → ${script.replace(/\\/g, '/')} ---\n`,
   )
 
   // remove job antigo se existir (fire-and-forget)
-  spawn(pm2, ['delete', jobName], {
+  spawn(pm2, pm2Args(['delete', jobName]), {
     cwd: root,
     env: process.env,
     shell: isWin,
@@ -193,7 +217,7 @@ export function schedulePm2Rebuild() {
   }).on('close', () => {
     const child = spawn(
       pm2,
-      [
+      pm2Args([
         'start',
         script,
         '--name',
@@ -203,7 +227,7 @@ export function schedulePm2Rebuild() {
         '--no-autorestart',
         '--',
         info.appName,
-      ],
+      ]),
       {
         cwd: root,
         env: process.env,

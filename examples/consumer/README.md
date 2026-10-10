@@ -28,6 +28,21 @@ O `extends: ['../..']` aponta para o monorepo. Preferível validar zonas e desen
 npm run kuroneko:check-zones -- examples/consumer
 ```
 
+## Produção (PM2)
+
+Este fixture **não** tem `scripts/pm2-rebuild.mjs`, `process-module-queue.mjs` nem `db-setup.mjs`. O restart usa os scripts do pacote.
+
+`ecosystem.config.cjs` sobe o app com `name` = `NUXT_PM2_APP_NAME` = `kuroneko-consumer`.
+
+```bash
+npm run build
+pm2 start ecosystem.config.cjs
+```
+
+Smoke: instalar um módulo da loja → **Reiniciar aplicação** → o banner de reinício some. `GET /api/modules/installed` fica com `needsRestart: false` e `pendingModuleIds: []`. Log em `.kuroneko/restart.log`.
+
+Os scripts `db:setup` / `db:generate` do `package.json` apontam para `node_modules/@kitsunesoftware/kuroneko/scripts/db-setup.mjs`.
+
 ## Simular update
 
 1. Mude a tag em `nuxt.config.ts` / `package.json`

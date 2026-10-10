@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#prisma/client'
 import { getModuleSettings } from '../../../../../base/server/utils/module-settings'
 import { usePrisma } from '../../../../../base/server/utils/prisma'
 import {

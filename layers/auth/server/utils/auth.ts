@@ -1,4 +1,4 @@
-import type { User } from '@prisma/client'
+import type { User } from '#prisma/client'
 import { usePrisma } from '../../../base/server/utils/prisma'
 import { getAdminRoleId } from '../../modules/roles/server/utils/roles'
 import { hashPassword, passwordNeedsRehash, verifyPassword } from './password'

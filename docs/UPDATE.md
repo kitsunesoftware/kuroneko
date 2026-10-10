@@ -71,15 +71,17 @@ npm install
 No **primeiro setup** do projeto consumidor (e após updates que mudem schema):
 
 ```bash
-# dependências (uma vez)
-npm i @prisma/client
-npm i -D prisma
+# dependências (uma vez). Sem o @7, `npm i prisma` instala o CLI 8, que não tem generate nem db push.
+npm i @prisma/client@7 @prisma/adapter-pg pg
+npm i -D prisma@7
 
 # compose schemas da plataforma + generate + db push
 npm run db:setup
 # equivalente:
 # node node_modules/@kitsunesoftware/kuroneko/scripts/db-setup.mjs
 ```
+
+O `db:setup` cria `prisma.config.ts` na raiz se ele ainda não existir. O client gerado fica em `generated/prisma` (não commitar). `DATABASE_URL` é lida por esse config, não mais pelo bloco `datasource` do schema.
 
 Scripts sugeridos no `package.json` do consumidor:
 
@@ -97,7 +99,33 @@ O script detecta a plataforma em `node_modules/@kitsunesoftware/kuroneko` e escr
 ### 4. Reiniciar
 
 - Dev: pare e suba de novo `npm run dev`
-- Produção (PM2): use o fluxo de rebuild/restart do Kuroneko (painel ou `pm2`)
+- Produção (PM2): botão **Reiniciar aplicação** no painel (ou o job que ele agenda)
+
+O restart **não** exige cópia de `scripts/pm2-rebuild.mjs`, `scripts/process-module-queue.mjs` nem `scripts/db-setup.mjs` no projeto. O Kuroneko resolve esses arquivos no pacote instalado (`node_modules/@kitsunesoftware/kuroneko/scripts/`). `process.cwd()` continua sendo a raiz do consumidor: compose, `.kuroneko/`, `layers/`, `npm run build` e o nome no PM2.
+
+Se existir `scripts/pm2-rebuild.mjs` **diferente** do arquivo do pacote, esse arquivo local é usado como override. Sem ele, vale o script do pacote. Por dentro, a pipeline chama `process-module-queue.mjs` e `db-setup.mjs` da mesma pasta do pacote.
+
+`NUXT_PM2_APP_NAME` tem de ser o mesmo `name` do `ecosystem.config.cjs` (é o alvo de `pm2 restart`):
+
+```js
+// ecosystem.config.cjs
+{ name: 'meowduel', script: '.output/server/index.mjs' }
+```
+
+```env
+NUXT_PM2_APP_NAME=meowduel
+```
+
+Fluxo depois de baixar um módulo na loja:
+
+1. `pm2 start ecosystem.config.cjs` (app já no ar, em produção)
+2. Instalar o módulo — ele entra na `ModuleChangeQueue` com `needsRestart: true`
+3. Clicar em **Reiniciar aplicação**
+4. O job para o app, processa a fila, aplica schema, faz build e sobe de novo
+5. `GET /api/modules/installed` volta com `needsRestart: false` e `pendingModuleIds: []`
+6. O aviso “O módulo requer reinicialização da aplicação para funcionar” some
+
+O caminho do script agendado fica em `.kuroneko/restart.log` (`schedule pm2 job … → …/pm2-rebuild.mjs`).
 
 ### 5. Smoke checklist
 
@@ -106,6 +134,7 @@ O script detecta a plataforma em `node_modules/@kitsunesoftware/kuroneko` e escr
 - [ ] Login / conta
 - [ ] Módulos da loja (se usar) compatíveis com `minKuroneko`
 - [ ] SMTP / e-mail (se configurado)
+- [ ] Consumer sob PM2, **sem** scripts Kuroneko em `scripts/`: instalar um módulo da loja, clicar em **Reiniciar aplicação**, e o banner some (`needsRestart: false`, `pendingModuleIds: []`)
 
 ## O que NÃO deve acontecer no update
 

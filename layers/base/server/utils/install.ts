@@ -1,8 +1,7 @@
 import type { InstallStatus } from '../../shared/install'
 import { access, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { PrismaClient } from '@prisma/client'
-import { usePrisma } from './prisma'
+import { createPrismaClient, usePrisma } from './prisma'
 
 export type { InstallStatus }
 
@@ -68,9 +67,7 @@ export async function ensureDatabaseExists(url: string) {
   adminUrl.pathname = '/postgres'
   adminUrl.search = ''
 
-  const admin = new PrismaClient({
-    datasources: { db: { url: adminUrl.toString() } },
-  })
+  const admin = createPrismaClient(adminUrl.toString())
   try {
     const rows = await admin.$queryRawUnsafe<Array<{ ok: number }>>(
       'SELECT 1 AS ok FROM pg_database WHERE datname = $1',
@@ -88,9 +85,7 @@ export async function ensureDatabaseExists(url: string) {
 }
 
 export async function testDatabaseUrl(url: string) {
-  const client = new PrismaClient({
-    datasources: { db: { url } },
-  })
+  const client = createPrismaClient(url)
   try {
     await client.$connect()
     await client.$queryRaw`SELECT 1`
@@ -99,9 +94,7 @@ export async function testDatabaseUrl(url: string) {
   catch (error) {
     if (!isMissingDatabaseError(error)) throw error
     await ensureDatabaseExists(url)
-    const retry = new PrismaClient({
-      datasources: { db: { url } },
-    })
+    const retry = createPrismaClient(url)
     try {
       await retry.$connect()
       await retry.$queryRaw`SELECT 1`

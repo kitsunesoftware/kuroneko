@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#prisma/client'
 import { usePrisma } from './prisma'
 
 export type ModuleSettingsMap = Record<string, string | number | boolean | string[]>

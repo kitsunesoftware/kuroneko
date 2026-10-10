@@ -225,7 +225,6 @@ export async function applyDatabaseSchema(installedModuleIds: string[] = []) {
     '--schema',
     'prisma/schema',
     '--accept-data-loss',
-    '--skip-generate',
   ])
 }
 
@@ -237,7 +236,7 @@ export type GeneratePrismaClientResult = {
 
 /**
  * Regenera o Prisma Client com todos os schemas descobertos.
- * No Windows, pode falhar com EPERM se o Nuxt estiver usando a DLL.
+ * No Windows, pode falhar com EPERM se o Nuxt estiver com os arquivos gerados abertos.
  */
 export async function generatePrismaClient(
   installedModuleIds: string[] = [],
@@ -251,7 +250,7 @@ export async function generatePrismaClient(
     const error = err instanceof Error ? err.message : String(err)
     return {
       ok: false,
-      // Windows: EPERM ou arquivo em uso pelo query engine carregado no Nuxt
+      // Windows: arquivo do client gerado em uso pelo processo do Nuxt
       eperm: /EPERM|operation not permitted|being used by another process|EBUSY/i.test(error),
       error,
     }
@@ -267,7 +266,6 @@ export async function resetDatabaseSchema(installedModuleIds: string[] = []) {
     '--schema',
     'prisma/schema',
     '--force-reset',
-    '--skip-generate',
     '--accept-data-loss',
   ])
 }

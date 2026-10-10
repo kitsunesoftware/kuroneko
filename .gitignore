@@ -27,5 +27,8 @@ logs
 .kuroneko
 .kuroneko-installed
 
+# Prisma Client gerado (Prisma 7)
+generated
+
 # Uploads locais (avatares, etc.)
 storage
